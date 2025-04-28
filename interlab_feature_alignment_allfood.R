@@ -63,9 +63,6 @@ merge_ids_majority_overlap <- function(df, id_column) {
 
 
 
-
-
-
 #################### Beef Ribeye #######################
 
 # Example UUID you want to keep
@@ -86,23 +83,17 @@ RI_threshold <- 10  # Adjust as needed
 mass_threshold <- 0.1  # Adjust as needed
 
 
-# Apply the merging function to your dataset
-a_beef1 <- merge_ids_majority_overlap(a_beef, "ID")
-b_beef1 <- merge_ids_majority_overlap(b_beef, "ID")
-c_beef1 <- merge_ids_majority_overlap(c_beef, "ID")
-
-# Combine the merged datasets across labs
-combined_data <- bind_rows(a_beef1, b_beef1, c_beef1)
+# Combine the merged datasets across labssa
+combined_data <- bind_rows(a_beef, b_beef, c_beef)
 
 # Create a list of unique RI and MZ values
 unique_values <- combined_data %>%
-  select(ID, lab, ri, mz, maxo_a, maxo_b, maxo_c) %>%
+  select(ID, lab, ri, mz) %>%
   unique()
 
-# Initialize an empty data frame to store matched results
+
 matched_results <- data.frame()
 
-# Match each unique RI and MZ across labs
 for (i in 1:nrow(unique_values)) {
   ri_value <- unique_values$ri[i]
   mz_value <- unique_values$mz[i]
@@ -112,31 +103,41 @@ for (i in 1:nrow(unique_values)) {
   matches <- combined_data %>%
     filter(abs(ri - ri_value) <= RI_threshold & abs(mz - mz_value) <= mass_threshold) %>%
     mutate(index = index) %>%
-    unique()  # Ensure matches are distinct
+    unique()
   
-  # Check if there are any matches
   if (nrow(matches) > 0) {
-    # Create a row with the RI, MZ, and unique matching labs
-    matched_row <- data.frame(ri = ri_value, mz = mz_value, labs = paste(unique(matches$lab), collapse = ", "), IDs = paste(unique(matches$ID), collapse = ", "))
+    # Keep only the match with the highest maxo per lab
+    top_matches <- matches %>%
+      group_by(lab) %>%
+      slice_max(maxo, with_ties = FALSE) %>%
+      ungroup()
     
-    # Append to the results
+    matched_row <- data.frame(
+      ri = ri_value,
+      mz = mz_value,
+      labs = paste(unique(top_matches$lab), collapse = ", "),
+      IDs = paste(unique(top_matches$ID), collapse = ", ")
+    )
+    
     matched_results <- bind_rows(matched_results, matched_row)
   }
 }
 
+
 # View the first few rows of the matched results
-head(matched_results)
 
 matched_results_cleaned <- merge_ids_majority_overlap(matched_results, "IDs")
 
 # Check the number of rows in matched_results compared to original datasets
 cat("Rows in matched results:", nrow(matched_results_cleaned), "\n")
 
-  
-  df <- apply(matched_results_cleaned,2,as.character)
+
+df <- apply(matched_results_cleaned,2,as.character)
 
 # Write the results to a CSV file
-write.csv(df, "beef-ribeye_RI10.csv", row.names = FALSE)
+write.csv(df, "beef-ribeye_cleaned-RI10.csv", row.names = FALSE)
+
+print(matched_results)
 
 
 
@@ -159,13 +160,8 @@ b_crf <- b_crf %>% distinct()
 c_crf <- c_crf %>% distinct()
 
 
-# Apply the merging function to your dataset
-a_crf1 <- merge_ids_majority_overlap(a_crf, "ID")
-b_crf1 <- merge_ids_majority_overlap(b_crf, "ID")
-c_crf1 <- merge_ids_majority_overlap(c_crf, "ID")
-
 # Combine the merged datasets across labs
-combined_data <- bind_rows(a_crf1, b_crf1, c_crf1)
+combined_data <- bind_rows(a_crf, b_crf, c_crf)
 
 # Create a list of unique RI and MZ values
 unique_values <- combined_data %>%
@@ -175,7 +171,6 @@ unique_values <- combined_data %>%
 # Initialize an empty data frame to store matched results
 matched_results <- data.frame()
 
-# Match each unique RI and MZ across labs
 for (i in 1:nrow(unique_values)) {
   ri_value <- unique_values$ri[i]
   mz_value <- unique_values$mz[i]
@@ -185,17 +180,27 @@ for (i in 1:nrow(unique_values)) {
   matches <- combined_data %>%
     filter(abs(ri - ri_value) <= RI_threshold & abs(mz - mz_value) <= mass_threshold) %>%
     mutate(index = index) %>%
-    unique()  # Ensure matches are distinct
+    unique()
   
-  # Check if there are any matches
   if (nrow(matches) > 0) {
-    # Create a row with the RI, MZ, and unique matching labs
-    matched_row <- data.frame(ri = ri_value, mz = mz_value, labs = paste(unique(matches$lab), collapse = ", "), IDs = paste(unique(matches$ID), collapse = ", "))
+    # Keep only the match with the highest maxo per lab
+    top_matches <- matches %>%
+      group_by(lab) %>%
+      slice_max(maxo, with_ties = FALSE) %>%
+      ungroup()
     
-    # Append to the results
+    matched_row <- data.frame(
+      ri = ri_value,
+      mz = mz_value,
+      labs = paste(unique(top_matches$lab), collapse = ", "),
+      IDs = paste(unique(top_matches$ID), collapse = ", ")
+    )
+    
     matched_results <- bind_rows(matched_results, matched_row)
   }
 }
+
+
 
 # View the first few rows of the matched results
 head(matched_results)
@@ -203,13 +208,13 @@ head(matched_results)
 matched_results_cleaned <- merge_ids_majority_overlap(matched_results, "IDs")
 
 # Check the number of rows in matched_results compared to original datasets
-cat("Rows in matched results:", nrow(matched_results_cleaned), "\n")
+cat("Rows in matched results:", nrow(matched_results), "\n")
 
 
 df <- apply(matched_results_cleaned,2,as.character)
 
 # Write the results to a CSV file
-write.csv(df, "crf_RI10.csv", row.names = FALSE)
+write.csv(df, "carrot_fin.csv", row.names = FALSE)
 
 
 
@@ -232,13 +237,8 @@ b_strawberry <- b_strawberry %>% distinct()
 c_strawberry <- c_strawberry %>% distinct()
 
 
-# Apply the merging function to your dataset
-a_strawberry1 <- merge_ids_majority_overlap(a_strawberry, "ID")
-b_strawberry1 <- merge_ids_majority_overlap(b_strawberry, "ID")
-c_strawberry1 <- merge_ids_majority_overlap(c_strawberry, "ID")
-
 # Combine the merged datasets across labs
-combined_data <- bind_rows(a_strawberry1, b_strawberry1, c_strawberry1)
+combined_data <- bind_rows(a_strawberry, b_strawberry, c_strawberry)
 
 # Create a list of unique RI and MZ values
 unique_values <- combined_data %>%
@@ -246,9 +246,10 @@ unique_values <- combined_data %>%
   unique()
 
 # Initialize an empty data frame to store matched results
+
+# Initialize an empty data frame to store matched results
 matched_results <- data.frame()
 
-# Match each unique RI and MZ across labs
 for (i in 1:nrow(unique_values)) {
   ri_value <- unique_values$ri[i]
   mz_value <- unique_values$mz[i]
@@ -258,17 +259,27 @@ for (i in 1:nrow(unique_values)) {
   matches <- combined_data %>%
     filter(abs(ri - ri_value) <= RI_threshold & abs(mz - mz_value) <= mass_threshold) %>%
     mutate(index = index) %>%
-    unique()  # Ensure matches are distinct
+    unique()
   
-  # Check if there are any matches
   if (nrow(matches) > 0) {
-    # Create a row with the RI, MZ, and unique matching labs
-    matched_row <- data.frame(ri = ri_value, mz = mz_value, labs = paste(unique(matches$lab), collapse = ", "), IDs = paste(unique(matches$ID), collapse = ", "))
+    # Keep only the match with the highest maxo per lab
+    top_matches <- matches %>%
+      group_by(lab) %>%
+      slice_max(maxo, with_ties = FALSE) %>%
+      ungroup()
     
-    # Append to the results
+    matched_row <- data.frame(
+      ri = ri_value,
+      mz = mz_value,
+      labs = paste(unique(top_matches$lab), collapse = ", "),
+      IDs = paste(unique(top_matches$ID), collapse = ", ")
+    )
+    
     matched_results <- bind_rows(matched_results, matched_row)
   }
 }
+
+
 
 # View the first few rows of the matched results
 head(matched_results)
@@ -276,15 +287,13 @@ head(matched_results)
 matched_results_cleaned <- merge_ids_majority_overlap(matched_results, "IDs")
 
 # Check the number of rows in matched_results compared to original datasets
-cat("Rows in matched results:", nrow(matched_results_cleaned), "\n")
+cat("Rows in matched results:", nrow(matched_results), "\n")
+
 
 df <- apply(matched_results_cleaned,2,as.character)
 
 # Write the results to a CSV file
-write.csv(df, "strawberry_RI10.csv", row.names = FALSE)
-
-
-
+write.csv(df, "strawberry_fin.csv", row.names = FALSE)
 
 
 
@@ -309,23 +318,18 @@ RI_threshold <- 10  # Adjust as needed
 mass_threshold <- 0.1  # Adjust as needed
 
 
-# Apply the merging function to your dataset
-a_wheat_flour1 <- merge_ids_majority_overlap(a_wheat_flour, "ID")
-b_wheat_flour1 <- merge_ids_majority_overlap(b_wheat_flour, "ID")
-c_wheat_flour1 <- merge_ids_majority_overlap(c_wheat_flour, "ID")
-
 # Combine the merged datasets across labs
-combined_data <- bind_rows(a_wheat_flour1, b_wheat_flour1, c_wheat_flour1)
+combined_data <- bind_rows(a_wheat_flour, b_wheat_flour, c_wheat_flour)
 
 # Create a list of unique RI and MZ values
 unique_values <- combined_data %>%
-  select(ID, lab, ri, mz, maxo_a, maxo_b, maxo_c) %>%
+  select(ID, lab, ri, mz) %>%
   unique()
+
 
 # Initialize an empty data frame to store matched results
 matched_results <- data.frame()
 
-# Match each unique RI and MZ across labs
 for (i in 1:nrow(unique_values)) {
   ri_value <- unique_values$ri[i]
   mz_value <- unique_values$mz[i]
@@ -335,17 +339,26 @@ for (i in 1:nrow(unique_values)) {
   matches <- combined_data %>%
     filter(abs(ri - ri_value) <= RI_threshold & abs(mz - mz_value) <= mass_threshold) %>%
     mutate(index = index) %>%
-    unique()  # Ensure matches are distinct
+    unique()
   
-  # Check if there are any matches
   if (nrow(matches) > 0) {
-    # Create a row with the RI, MZ, and unique matching labs
-    matched_row <- data.frame(ri = ri_value, mz = mz_value, labs = paste(unique(matches$lab), collapse = ", "), IDs = paste(unique(matches$ID), collapse = ", "))
+    # Keep only the match with the highest maxo per lab
+    top_matches <- matches %>%
+      group_by(lab) %>%
+      slice_max(maxo, with_ties = FALSE) %>%
+      ungroup()
     
-    # Append to the results
+    matched_row <- data.frame(
+      ri = ri_value,
+      mz = mz_value,
+      labs = paste(unique(top_matches$lab), collapse = ", "),
+      IDs = paste(unique(top_matches$ID), collapse = ", ")
+    )
+    
     matched_results <- bind_rows(matched_results, matched_row)
   }
 }
+
 
 # View the first few rows of the matched results
 head(matched_results)
@@ -353,13 +366,13 @@ head(matched_results)
 matched_results_cleaned <- merge_ids_majority_overlap(matched_results, "IDs")
 
 # Check the number of rows in matched_results compared to original datasets
-cat("Rows in matched results:", nrow(matched_results_cleaned), "\n")
+cat("Rows in matched results:", nrow(matched_results), "\n")
 
 
 df <- apply(matched_results_cleaned,2,as.character)
 
 # Write the results to a CSV file
-write.csv(df, "wheat_flour_RI10.csv", row.names = FALSE)
+write.csv(df, "wheat_flour.csv", row.names = FALSE)
 
 
 
@@ -387,23 +400,17 @@ RI_threshold <- 10  # Adjust as needed
 mass_threshold <- 0.1  # Adjust as needed
 
 
-# Apply the merging function to your dataset
-a_green_pepper1 <- merge_ids_majority_overlap(a_green_pepper, "ID")
-b_green_pepper1 <- merge_ids_majority_overlap(b_green_pepper, "ID")
-c_green_pepper1 <- merge_ids_majority_overlap(c_green_pepper, "ID")
-
 # Combine the merged datasets across labs
-combined_data <- bind_rows(a_green_pepper1, b_green_pepper1, c_green_pepper1)
+combined_data <- bind_rows(a_green_pepper, b_green_pepper, c_green_pepper)
 
 # Create a list of unique RI and MZ values
 unique_values <- combined_data %>%
-  select(ID, lab, ri, mz, maxo_a, maxo_b, maxo_c) %>%
+  select(ID, lab, ri, mz) %>%
   unique()
 
 # Initialize an empty data frame to store matched results
 matched_results <- data.frame()
 
-# Match each unique RI and MZ across labs
 for (i in 1:nrow(unique_values)) {
   ri_value <- unique_values$ri[i]
   mz_value <- unique_values$mz[i]
@@ -413,17 +420,26 @@ for (i in 1:nrow(unique_values)) {
   matches <- combined_data %>%
     filter(abs(ri - ri_value) <= RI_threshold & abs(mz - mz_value) <= mass_threshold) %>%
     mutate(index = index) %>%
-    unique()  # Ensure matches are distinct
+    unique()
   
-  # Check if there are any matches
   if (nrow(matches) > 0) {
-    # Create a row with the RI, MZ, and unique matching labs
-    matched_row <- data.frame(ri = ri_value, mz = mz_value, labs = paste(unique(matches$lab), collapse = ", "), IDs = paste(unique(matches$ID), collapse = ", "))
+    # Keep only the match with the highest maxo per lab
+    top_matches <- matches %>%
+      group_by(lab) %>%
+      slice_max(maxo, with_ties = FALSE) %>%
+      ungroup()
     
-    # Append to the results
+    matched_row <- data.frame(
+      ri = ri_value,
+      mz = mz_value,
+      labs = paste(unique(top_matches$lab), collapse = ", "),
+      IDs = paste(unique(top_matches$ID), collapse = ", ")
+    )
+    
     matched_results <- bind_rows(matched_results, matched_row)
   }
 }
+
 
 # View the first few rows of the matched results
 head(matched_results)
@@ -431,28 +447,11 @@ head(matched_results)
 matched_results_cleaned <- merge_ids_majority_overlap(matched_results, "IDs")
 
 # Check the number of rows in matched_results compared to original datasets
-cat("Rows in matched results:", nrow(matched_results_cleaned), "\n")
+cat("Rows in matched results:", nrow(matched_results), "\n")
 
 
 df <- apply(matched_results_cleaned,2,as.character)
 
 # Write the results to a CSV file
-write.csv(df, "green_pepper_RI10.csv", row.names = FALSE)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+write.csv(df, "green_pepper.csv", row.names = FALSE)
 
